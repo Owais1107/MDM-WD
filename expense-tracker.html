@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpendWise – Student Expense Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen transition-colors">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white shadow">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold">💸 SpendWise</h1>
+        <p class="text-indigo-100 text-xs sm:text-sm">Track your pocket money, stay on budget</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="exportBtn" class="hidden sm:block bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm">⬇ CSV</button>
+        <button id="themeBtn" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm" aria-label="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Summary cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+        <p class="text-sm text-slate-500 dark:text-slate-400">Balance</p>
+        <p id="balance" class="text-2xl font-bold mt-1">₹0</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+        <p class="text-sm text-slate-500 dark:text-slate-400">Income</p>
+        <p id="income" class="text-2xl font-bold mt-1 text-emerald-500">₹0</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+        <p class="text-sm text-slate-500 dark:text-slate-400">Expenses</p>
+        <p id="expense" class="text-2xl font-bold mt-1 text-rose-500">₹0</p>
+      </div>
+    </section>
+
+    <!-- Budget -->
+    <section class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h2 class="font-semibold">Monthly Budget</h2>
+        <div class="flex items-center gap-2">
+          <input id="budgetInput" type="number" min="0" placeholder="Set budget (₹)"
+            class="w-36 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm" />
+          <button id="budgetBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-1.5 rounded-lg">Set</button>
+        </div>
+      </div>
+      <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+        <div id="budgetBar" class="h-3 rounded-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
+      </div>
+      <p id="budgetText" class="text-sm mt-2 text-slate-500 dark:text-slate-400">No budget set.</p>
+    </section>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+      <!-- Form -->
+      <section class="bg-white dark:bg-slate-800 rounded-xl shadow p-5 lg:col-span-1 h-fit">
+        <h2 class="font-semibold mb-4">Add Transaction</h2>
+        <form id="form" class="space-y-3">
+          <input id="title" type="text" placeholder="Title (e.g. Canteen lunch)" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent" />
+          <input id="amount" type="number" min="1" step="0.01" placeholder="Amount (₹)" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent" />
+          <div class="grid grid-cols-2 gap-3">
+            <select id="type" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+            <select id="category" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+              <option>Food</option><option>Travel</option><option>Books</option>
+              <option>Entertainment</option><option>Rent</option><option>Other</option>
+            </select>
+          </div>
+          <input id="date" type="date" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent" />
+          <p id="error" class="text-rose-500 text-sm hidden"></p>
+          <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition">Add</button>
+        </form>
+      </section>
+
+      <!-- List + breakdown -->
+      <section class="lg:col-span-2 space-y-6">
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+          <h2 class="font-semibold mb-3">Spending by Category</h2>
+          <div id="breakdown" class="space-y-2 text-sm"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-5">
+          <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <input id="search" type="search" placeholder="🔍 Search..."
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent" />
+            <select id="filterType" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+              <option value="all">All</option><option value="expense">Expenses</option><option value="income">Income</option>
+            </select>
+            <select id="filterCat" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+              <option value="all">All categories</option>
+              <option>Food</option><option>Travel</option><option>Books</option>
+              <option>Entertainment</option><option>Rent</option><option>Other</option>
+            </select>
+          </div>
+          <ul id="list" class="divide-y divide-slate-200 dark:divide-slate-700"></ul>
+          <p id="empty" class="text-center text-slate-400 py-8 hidden">No transactions found.</p>
+          <button id="exportBtn2" class="sm:hidden mt-4 w-full border border-indigo-600 text-indigo-600 rounded-lg py-2 text-sm">⬇ Export CSV</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 py-6">Built with HTML, Tailwind CSS &amp; JavaScript · Data saved in your browser</footer>
+
+  <script>
+    // ---------- State ----------
+    const $ = (id) => document.getElementById(id);
+    let transactions = JSON.parse(localStorage.getItem('sw_tx') || '[]');
+    let budget = Number(localStorage.getItem('sw_budget') || 0);
+    const icons = { Food: '🍔', Travel: '🚌', Books: '📚', Entertainment: '🎬', Rent: '🏠', Other: '📦' };
+    const fmt = (n) => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+    const save = () => {
+      localStorage.setItem('sw_tx', JSON.stringify(transactions));
+      localStorage.setItem('sw_budget', budget);
+    };
+
+    // ---------- Theme ----------
+    const applyTheme = (dark) => {
+      document.documentElement.classList.toggle('dark', dark);
+      $('themeBtn').textContent = dark ? '☀️' : '🌙';
+      localStorage.setItem('sw_dark', dark ? '1' : '0');
+    };
+    applyTheme(localStorage.getItem('sw_dark') === '1');
+    $('themeBtn').onclick = () => applyTheme(!document.documentElement.classList.contains('dark'));
+
+    // ---------- Render ----------
+    function render() {
+      const inc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const exp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      $('income').textContent = fmt(inc);
+      $('expense').textContent = fmt(exp);
+      $('balance').textContent = fmt(inc - exp);
+      $('balance').className = 'text-2xl font-bold mt-1 ' + (inc - exp < 0 ? 'text-rose-500' : '');
+
+      renderBudget(exp);
+      renderBreakdown(exp);
+      renderList();
+    }
+
+    function renderBudget(exp) {
+      const bar = $('budgetBar');
+      if (!budget) {
+        bar.style.width = '0%';
+        $('budgetText').textContent = 'No budget set.';
+        return;
+      }
+      const pct = Math.min((exp / budget) * 100, 100);
+      bar.style.width = pct + '%';
+      bar.className = 'h-3 rounded-full transition-all duration-500 ' +
+        (pct >= 100 ? 'bg-rose-500' : pct >= 75 ? 'bg-amber-500' : 'bg-emerald-500');
+      const left = budget - exp;
+      $('budgetText').textContent = left >= 0
+        ? `${fmt(exp)} of ${fmt(budget)} spent · ${fmt(left)} left`
+        : `⚠️ Over budget by ${fmt(-left)}`;
+    }
+
+    function renderBreakdown(totalExp) {
+      const totals = {};
+      transactions.filter(t => t.type === 'expense')
+        .forEach(t => totals[t.category] = (totals[t.category] || 0) + t.amount);
+      const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+      $('breakdown').innerHTML = entries.length ? entries.map(([cat, v]) => {
+        const pct = totalExp ? (v / totalExp) * 100 : 0;
+        return `<div>
+          <div class="flex justify-between mb-1"><span>${icons[cat]} ${cat}</span><span>${fmt(v)} (${pct.toFixed(0)}%)</span></div>
+          <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+            <div class="bg-indigo-500 h-2 rounded-full" style="width:${pct}%"></div>
+          </div></div>`;
+      }).join('') : '<p class="text-slate-400">No expenses yet.</p>';
+    }
+
+    function renderList() {
+      const q = $('search').value.toLowerCase();
+      const ft = $('filterType').value, fc = $('filterCat').value;
+      const rows = transactions
+        .filter(t => (ft === 'all' || t.type === ft) && (fc === 'all' || t.category === fc) &&
+                     t.title.toLowerCase().includes(q))
+        .sort((a, b) => b.date.localeCompare(a.date));
+
+      $('empty').classList.toggle('hidden', rows.length > 0);
+      $('list').innerHTML = rows.map(t => `
+        <li class="flex items-center justify-between py-3 gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="text-2xl">${icons[t.category]}</span>
+            <div class="min-w-0">
+              <p class="font-medium truncate">${escapeHtml(t.title)}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">${t.category} · ${t.date}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-semibold ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}">
+              ${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}</span>
+            <button data-id="${t.id}" class="del text-slate-400 hover:text-rose-500" aria-label="Delete">🗑</button>
+          </div>
+        </li>`).join('');
+    }
+
+    const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // ---------- Events ----------
+    $('date').valueAsDate = new Date();
+
+    $('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = $('title').value.trim();
+      const amount = parseFloat($('amount').value);
+      if (!title || isNaN(amount) || amount <= 0) {
+        $('error').textContent = 'Please enter a valid title and amount.';
+        $('error').classList.remove('hidden');
+        return;
+      }
+      $('error').classList.add('hidden');
+      transactions.push({
+        id: Date.now(), title, amount,
+        type: $('type').value, category: $('category').value, date: $('date').value
+      });
+      save(); render();
+      $('title').value = ''; $('amount').value = '';
+    });
+
+    $('list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.del');
+      if (!btn) return;
+      transactions = transactions.filter(t => t.id !== Number(btn.dataset.id));
+      save(); render();
+    });
+
+    $('budgetBtn').onclick = () => {
+      budget = Math.max(0, Number($('budgetInput').value) || 0);
+      $('budgetInput').value = '';
+      save(); render();
+    };
+
+    ['search', 'filterType', 'filterCat'].forEach(id => $(id).addEventListener('input', renderList));
+
+    function exportCSV() {
+      if (!transactions.length) return alert('Nothing to export yet.');
+      const rows = [['Date', 'Title', 'Type', 'Category', 'Amount'],
+        ...transactions.map(t => [t.date, `"${t.title.replace(/"/g, '""')}"`, t.type, t.category, t.amount])];
+      const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'spendwise.csv';
+      a.click();
+    }
+    $('exportBtn').onclick = exportCSV;
+    $('exportBtn2').onclick = exportCSV;
+
+    render();
+  </script>
+</body>
+</html>
