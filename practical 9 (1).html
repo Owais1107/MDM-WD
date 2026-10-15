@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal To-Do List</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-100 to-sky-100 flex items-start justify-center p-4 sm:p-8">
+
+  <main class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+    <h1 class="text-2xl font-bold text-indigo-700 text-center">📝 My To-Do List</h1>
+    <p class="text-center text-sm text-gray-500 mb-5">Organize your academic and personal tasks</p>
+
+    <!-- Add task form -->
+    <form id="task-form" class="flex gap-2">
+      <input
+        id="task-input"
+        type="text"
+        placeholder="Add a new task..."
+        maxlength="100"
+        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+      <button
+        type="submit"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition"
+      >
+        Add
+      </button>
+    </form>
+    <p id="error" class="text-red-500 text-sm mt-1 hidden">Please enter a task.</p>
+
+    <!-- Filters -->
+    <div class="flex justify-center gap-2 mt-5 text-sm">
+      <button data-filter="all" class="filter-btn px-3 py-1 rounded-full">All</button>
+      <button data-filter="active" class="filter-btn px-3 py-1 rounded-full">Pending</button>
+      <button data-filter="done" class="filter-btn px-3 py-1 rounded-full">Completed</button>
+    </div>
+
+    <!-- Task list -->
+    <ul id="task-list" class="mt-4 space-y-2"></ul>
+    <p id="empty" class="text-center text-gray-400 mt-6 hidden">No tasks here. 🎉</p>
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center mt-5 text-sm text-gray-500">
+      <span id="counter"></span>
+      <button id="clear-done" class="text-red-500 hover:underline">Clear completed</button>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("task-form");
+    const input = document.getElementById("task-input");
+    const errorEl = document.getElementById("error");
+    const list = document.getElementById("task-list");
+    const emptyEl = document.getElementById("empty");
+    const counter = document.getElementById("counter");
+    const filterBtns = document.querySelectorAll(".filter-btn");
+
+    let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    let filter = "all";
+
+    const save = () => localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    function render() {
+      list.innerHTML = "";
+      const visible = tasks.filter(t =>
+        filter === "all" ? true : filter === "done" ? t.done : !t.done
+      );
+
+      visible.forEach(task => {
+        const li = document.createElement("li");
+        li.className =
+          "flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = task.done;
+        check.className = "h-5 w-5 accent-indigo-600 cursor-pointer";
+        check.addEventListener("change", () => toggleTask(task.id));
+
+        const text = document.createElement("span");
+        text.textContent = task.text; // textContent prevents HTML injection
+        text.className =
+          "flex-1 break-words " +
+          (task.done ? "line-through text-gray-400" : "text-gray-800");
+
+        const del = document.createElement("button");
+        del.textContent = "✕";
+        del.title = "Delete task";
+        del.className = "text-red-500 hover:text-red-700 font-bold px-2";
+        del.addEventListener("click", () => deleteTask(task.id));
+
+        li.append(check, text, del);
+        list.appendChild(li);
+      });
+
+      emptyEl.classList.toggle("hidden", visible.length > 0);
+      const pending = tasks.filter(t => !t.done).length;
+      counter.textContent = `${pending} pending / ${tasks.length} total`;
+
+      filterBtns.forEach(b => {
+        const active = b.dataset.filter === filter;
+        b.className =
+          "filter-btn px-3 py-1 rounded-full " +
+          (active
+            ? "bg-indigo-600 text-white"
+            : "bg-gray-100 text-gray-600 hover:bg-gray-200");
+      });
+    }
+
+    function addTask(text) {
+      tasks.push({ id: Date.now(), text, done: false });
+      save();
+      render();
+    }
+
+    function toggleTask(id) {
+      tasks = tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t));
+      save();
+      render();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const value = input.value.trim();
+      if (!value) {
+        errorEl.classList.remove("hidden");
+        return;
+      }
+      errorEl.classList.add("hidden");
+      addTask(value);
+      input.value = "";
+      input.focus();
+    });
+
+    filterBtns.forEach(b =>
+      b.addEventListener("click", () => {
+        filter = b.dataset.filter;
+        render();
+      })
+    );
+
+    document.getElementById("clear-done").addEventListener("click", () => {
+      tasks = tasks.filter(t => !t.done);
+      save();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
